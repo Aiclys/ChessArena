@@ -1,2 +1,3 @@
 # ChessArena
-Chess GUI writen in Java
+
+#### The game of chess played by two chess engines (ChesSense and KillerFish) eternally. One must imagine them happy.
