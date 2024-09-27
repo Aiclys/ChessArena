@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.Arrays;
 
 public class UCIEngine {
     private String engineCommand;
@@ -9,13 +10,29 @@ public class UCIEngine {
     private BufferedReader reader;
     private BufferedWriter writer;
 
+    public String engineName;
+    public String engineAuthor;
+
+    public static void main(String[] args) {
+        System.out.println("new inst");
+        UCIEngine engine = new UCIEngine("stockfish");
+        try {
+            System.out.println("prep");
+            engine.prepare();
+            System.out.println("set fen");
+            engine.setPositionFen("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2");
+            System.out.println("go");
+            System.out.println(engine.go(5));
+        } catch(Exception ignored) {}
+    }
+
     /**
      * Create a new UCIEngine instance
      * @param engineCommand The command to run, to get a UCI interface.
      */
     public UCIEngine(String engineCommand) {
         this.engineCommand = engineCommand;
-        this.processBuilder = new ProcessBuilder(engineCommand);
+        this.processBuilder = new ProcessBuilder(this.engineCommand);
     }
 
     /**
@@ -33,6 +50,18 @@ public class UCIEngine {
         // get a handle on stdout
         InputStream stdout = engineProcess.getInputStream();
         reader = new BufferedReader(new InputStreamReader(stdout));
+
+        // some engines send banners which we just discard of here
+        String nextLine = this.readLine();
+        while (nextLine != null) {
+            System.out.println("[engine banner] " + nextLine);
+            nextLine = this.readLine();
+            System.out.println("loop");
+        }
+
+        // check for uci
+        System.out.println("check uci");
+        this.checkForUCI();
     }
 
     /**
@@ -41,7 +70,9 @@ public class UCIEngine {
      * @throws IOException
      */
     public void writeLine(String line) throws IOException {
+        System.out.println("writeLine " + line);
         writer.write(line + "\n");
+        writer.flush();
     }
 
     /**
@@ -50,7 +81,31 @@ public class UCIEngine {
      * @throws IOException
      */
     public String readLine() throws IOException {
-        return reader.readLine();
+        String l = reader.readLine();
+        System.out.println("readLine " + l);
+        return l;
+    }
+
+    /**
+     * Check if the engine is actually UCI Compatible, and read engine information.
+     * @throws IOException
+     */
+    private void checkForUCI() throws IOException {
+        this.writeLine("uci");
+
+        String nextLine = this.readLine();
+        while (nextLine != null) {
+            System.out.println(nextLine);
+            String[] tokens = nextLine.split(" ");
+            if(tokens[0].equals("uciok")) break;
+
+            if(tokens[0].equals("id")) {
+                if(tokens[1].equals("name")) this.engineName = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
+                if(tokens[1].equals("author")) this.engineAuthor = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
+            }
+
+            nextLine = this.readLine();
+        }
     }
 
     /**
@@ -67,11 +122,16 @@ public class UCIEngine {
      * @return The best engine in SAN format. (e.g. "a1a3")
      * @throws IOException
      */
-    public String go() throws IOException {
-        this.writeLine("go");
+    public String go(Integer depth) throws IOException {
+        String command = "go";
+
+        if(depth != null) command += " depth " + depth;
+
+        this.writeLine(command);
 
         String nextLine = this.readLine();
         while (nextLine != null) {
+            System.out.println(nextLine);
             String[] tokens = nextLine.split(" ");
             if(tokens[0].equals("bestmove")) return tokens[1];
 
