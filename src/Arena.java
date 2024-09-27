@@ -1,4 +1,4 @@
-package com.ChessArena.Board;
+package com.ChessArena;
 
 public class Arena {
     public static void main(string[] args) {
