@@ -7,6 +7,9 @@ public class UCIEngine {
     private ProcessBuilder processBuilder;
     private Process engineProcess;
 
+    private OutputStream stdin;
+    private InputStream stdout;
+
     private BufferedReader reader;
     private BufferedWriter writer;
 
@@ -44,11 +47,11 @@ public class UCIEngine {
         engineProcess = processBuilder.start();
 
         // get a handle on stdin
-        OutputStream stdin = engineProcess.getOutputStream();
+        this.stdin = engineProcess.getOutputStream();
         writer = new BufferedWriter(new OutputStreamWriter(stdin));
 
         // get a handle on stdout
-        InputStream stdout = engineProcess.getInputStream();
+        this.stdout = engineProcess.getInputStream();
         reader = new BufferedReader(new InputStreamReader(stdout));
 
         // some engines send banners which we just discard of here
@@ -81,9 +84,20 @@ public class UCIEngine {
      * @throws IOException
      */
     public String readLine() throws IOException {
-        String l = reader.readLine();
-        System.out.println("readLine " + l);
-        return l;
+        if(stdout.available() == 0) return null;
+        int bytesRead = 0;
+        StringBuilder lineOut = new StringBuilder();
+        while(true) {
+            int bytein = stdout.read();
+            char bytechar = (char) bytein;
+            if(bytein == -1 || bytechar == '\n') {
+                if(bytesRead == 0) return null;
+                return lineOut.toString();
+            }
+            lineOut.append(bytechar);
+            bytesRead++;
+            //System.out.println("readline " + bytesRead + " " + lineOut);
+        }
     }
 
     /**
@@ -93,8 +107,10 @@ public class UCIEngine {
     private void checkForUCI() throws IOException {
         this.writeLine("uci");
 
-        String nextLine = this.readLine();
-        while (nextLine != null) {
+        String nextLine = null;
+        while (true) {
+            nextLine = this.readLine();
+            if(nextLine == null) continue;
             System.out.println(nextLine);
             String[] tokens = nextLine.split(" ");
             if(tokens[0].equals("uciok")) break;
@@ -103,9 +119,9 @@ public class UCIEngine {
                 if(tokens[1].equals("name")) this.engineName = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
                 if(tokens[1].equals("author")) this.engineAuthor = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
             }
-
-            nextLine = this.readLine();
         }
+
+        System.out.println("UCI Check Complete, Detected Engine " + this.engineName + " (by " + this.engineAuthor + ")");
     }
 
     /**
@@ -129,20 +145,23 @@ public class UCIEngine {
 
         this.writeLine(command);
 
-        String nextLine = this.readLine();
-        while (nextLine != null) {
+        String nextLine = null;
+        while (true) {
+            nextLine = this.readLine();
+            if(nextLine == null) continue;
             System.out.println(nextLine);
             String[] tokens = nextLine.split(" ");
-            if(tokens[0].equals("bestmove")) return tokens[1];
+            if(tokens[0].equals("bestmove")) {
+                return tokens[1];
+            }
 
             if(tokens[0].equals("info")) {
                 // This is used by the engine to send telemetry data.
                 // We will output this to the user via graphs / a terminal.
             }
 
-            nextLine = this.readLine();
         }
 
-        return null; // There was no move returned. (Engine process crashed?)
+        //return null; // There was no move returned. (Engine process crashed?)
     }
 }
