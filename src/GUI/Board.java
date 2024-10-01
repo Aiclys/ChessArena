@@ -1,5 +1,5 @@
 // Declare package
-//package com.chess.GUI;
+package com.chess.GUI;
 
 // Imports needed for the GUI of the  chess board
 import javax.swing.*;
@@ -8,43 +8,43 @@ import java.awt.geom.*;
 
 // Main class declaration
 public class Board {
-    // Attributes of the board
-    int size;
-    int[][] boardArr;
+  // Attributes of the board
+  final int SIZE = 8;
+  final int SQUARE_SIZE = 100;
+  String[] colors;
 
-    /**
-     * This is the constructor of the Board class, 
-     * which initializes all of the variables.
-    */
-    public Board() {
-      size = 8;
-      boardArr = new int[8][8];
-    }
+  /**
+   * This is the constructor of the Board class,
+   * which initializes all of the variables.
+   */
+  public Board(String[] colors) {
+    this.colors = colors;
+  }
 
-    /**
-     * This function makes the board visible.
-    */
-    public void show() {
-    }
+  /**
+   * This function makes the board visible and
+   * draws 64 squares, either white or black
+   */
+  public void show(Graphics2D g2d) {
 
-    /**
-     * This function creates all 64 Fields, making them black or white.
-    */
-    public void initializeFields() {
-      Graphics g;
-      //Graphics2D g2d = (Graphics2D) g;  // Creates graphics for the square 
-      int count = 1;
-      for(int i = 1; i <= 8; i++) {    // For-loop for the rows of the chess board 
-        for(int j = 1; j <= 8; j++) {  // For-loop for the columns of the chess board
-          if(count%2 == 0) {
-              
-          } else {
+    int count = 0;
 
-          }
-          count++;
+    for (int row = 1; row <= SIZE; row++) {
+
+      for (int col = 1; col <= SIZE; col++) {
+
+        if (count == 0) {
+          g2d.setColor(Color.BLACK);
+          count = 1;
+        } else {
+          g2d.setColor(Color.WHITE);
+          count = 0;
         }
+        g2d.fillRect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+        count++;
       }
+      count = (count = 0) ? 1 : 0;
     }
+  }
 
-    
 }
